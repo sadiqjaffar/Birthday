@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>An Apology, With Interruptions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,500&family=Nunito+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     EDIT ME: all the words live in the CONFIG object near the
+     bottom of the <script>. Swap names, excuses, and the letter
+     text there — nothing else needs to change.
+     ============================================================ */
+
+  :root{
+    --plum:#2B1B34;
+    --plum-deep:#1B1023;
+    --cream:#FFF8F0;
+    --coral:#FF6F61;
+    --gold:#FFC857;
+    --lavender:#C9ADD1;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100%;
+    background:radial-gradient(ellipse at top, var(--plum) 0%, var(--plum-deep) 70%);
+    font-family:'Nunito Sans', sans-serif;
+    color:var(--cream);
+    overflow-x:hidden;
+    display:flex;
+    align-items:safe center;
+    justify-content:center;
+    padding: env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0) 0;
+  }
+  .stage{
+    position:relative;
+    width:min(94vw, 640px);
+    min-height:min(90vh, 720px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:2rem 1.25rem;
+  }
+  .scene{
+    display:none;
+    width:100%;
+    text-align:center;
+    animation: rise .6s ease both;
+  }
+  .scene.active{display:block;}
+  @keyframes rise{ from{opacity:0; transform:translateY(14px);} to{opacity:1; transform:translateY(0);} }
+  @media (prefers-reduced-motion: reduce){ .scene{animation:none;} }
+
+  h1,h2{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    line-height:1.15;
+    margin:0 0 .6em;
+  }
+  h1{ font-size:clamp(1.8rem, 5vw, 2.6rem); }
+  h2{ font-size:clamp(1.4rem, 4vw, 2rem); }
+  p{ font-size:1.05rem; line-height:1.6; color:#EFE3F3; margin:0 0 1.2em; }
+  .lede{ color:var(--lavender); font-size:1rem; }
+
+  button{
+    font-family:'Nunito Sans', sans-serif;
+    font-weight:800;
+    font-size:1rem;
+    border:none;
+    border-radius:999px;
+    padding:.85em 1.8em;
+    cursor:pointer;
+    background:var(--coral);
+    color:var(--plum-deep);
+    transition:transform .15s ease;
+  }
+  button:hover{ transform:translateY(-2px); }
+  button:active{ transform:translateY(0); }
+  button:focus-visible{ outline:3px solid var(--gold); outline-offset:3px; }
+  button.ghost{
+    background:transparent;
+    color:var(--cream);
+    border:2px solid rgba(255,255,255,.35);
+  }
+
+  /* --- Scene 2: the game --- */
+  #game-field{
+    position:relative;
+    width:100%;
+    height:min(52vh, 380px);
+    margin:1rem 0 1.4rem;
+    border-radius:20px;
+    background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
+    border:1px solid rgba(255,255,255,.12);
+    overflow:hidden;
+  }
+  .bubble{
+    position:absolute;
+    padding:.6em 1em;
+    border-radius:999px;
+    background:rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.25);
+    color:var(--cream);
+    font-size:.9rem;
+    cursor:pointer;
+    backdrop-filter: blur(2px);
+    animation: drift linear infinite;
+    transition: transform .12s ease, opacity .25s ease;
+  }
+  .bubble:hover{ transform:scale(1.05); }
+  .bubble.popped{ opacity:0; transform:scale(1.4); pointer-events:none; }
+  @keyframes drift{
+    from{ transform:translateY(0); }
+    to{ transform:translateY(-14px); }
+  }
+  #score{ color:var(--lavender); font-size:.95rem; margin-top:.4rem; }
+
+  /* --- Scene 3: the letter --- */
+  .envelope{
+    width:180px; height:120px;
+    margin:0 auto 1.4rem;
+    position:relative;
+    cursor:pointer;
+  }
+  .envelope .body{
+    position:absolute; inset:0;
+    background:var(--coral);
+    border-radius:8px;
+  }
+  .envelope .flap{
+    position:absolute; top:0; left:0; right:0; height:60px;
+    background:#e85a4d;
+    clip-path: polygon(0 0, 50% 60%, 100% 0);
+    transform-origin:top;
+    transition: transform .5s ease;
+    border-radius:8px 8px 0 0;
+  }
+  .envelope.open .flap{ transform: rotateX(180deg); }
+  .envelope .heart{
+    position:absolute; left:50%; top:55%;
+    transform:translate(-50%,-50%);
+    font-size:1.4rem;
+  }
+  .letter-text{
+    text-align:left;
+    background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:16px;
+    padding:1.4rem 1.6rem;
+    max-height:0;
+    overflow:hidden;
+    opacity:0;
+    transition: max-height .6s ease, opacity .6s ease, padding .6s ease;
+  }
+  .letter-text.shown{
+    max-height:600px;
+    opacity:1;
+    padding:1.4rem 1.6rem;
+  }
+  .signoff{
+    font-family:'Fraunces', serif;
+    font-style:italic;
+    color:var(--gold);
+    margin-top:1rem;
+  }
+
+  .dots{ display:flex; gap:.4rem; justify-content:center; margin-top:1.6rem; }
+  .dots span{ width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,.25); }
+  .dots span.active{ background:var(--gold); }
+
+  /* --- Scene 5: birthday --- */
+  #confetti-field{
+    position:relative;
+    width:100%;
+    height:min(46vh, 320px);
+    margin:0.4rem 0 1rem;
+    overflow:hidden;
+    border-radius:20px;
+  }
+  .confetti{
+    position:absolute;
+    top:-20px;
+    width:9px; height:14px;
+    border-radius:2px;
+    animation: fall linear forwards;
+  }
+  @keyframes fall{
+    to{ transform: translateY(340px) rotate(360deg); opacity:.9; }
+  }
+  @media (prefers-reduced-motion: reduce){ .confetti{ display:none; } }
+  .cake{ font-size:3rem; margin-bottom:.2rem; }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- SCENE 1: intro -->
+  <section class="scene active" data-scene="1">
+    <p class="lede" id="s1-eyebrow">My Love I owe an apology to you</p>
+    <h1 id="s1-title">Before I say sorry, I need you to do something for me.</h1>
+    <p id="s1-body">There are a few repeated faults of mine floating around in here. Pop them before they pop you.</p>
+    <button id="s1-start">Fine, let's do this</button>
+  </section>
+
+  <!-- SCENE 2: the game -->
+  <section class="scene" data-scene="2">
+    <h2 id="s2-title">Pop every excuse</h2>
+    <p id="s2-body">One click each. but pop them everything pleaseeee</p>
+    <div id="game-field"></div>
+    <p id="score">0 popped</p>
+  </section>
+
+  <!-- SCENE 3: the letter -->
+  <section class="scene" data-scene="3">
+    <h2 id="s3-title">Okay. Here's the actual part.</h2>
+    <div class="envelope" id="envelope">
+      <div class="body"></div>
+      <div class="flap"></div>
+      <div class="heart">💌</div>
+    </div>
+    <p class="lede" id="s3-hint">tap the envelope</p>
+    <div class="letter-text" id="letter-text">
+      <p id="letter-body">
+       My Baby, I'm sorry I mess up everytime, not just once, multiple times.
+       I'm very ashamed of it. I dont even have the courage to face you with what I did yesterday.
+       I just became the most worst person ever to be loved. But, I really wanted to let you know that you're very important to me.
+       YOU ARE REALLY MY EVERYTHING. I'M SORRY LOVE.
+      </p>
+      <p class="signoff" id="letter-signoff">— jaff</p>
+    </div>
+    <div style="margin-top:1.4rem;">
+      <button id="s3-next" style="display:none;">One more thing</button>
+    </div>
+  </section>
+
+  <!-- SCENE 4: closing -->
+  <section class="scene" data-scene="4">
+    <h2 id="s4-title">So... are we okie? IK not yet :( </h2>
+    <p id="s4-body">No pressure. Just glad you read this far.</p>
+    <button id="s4-next">Wait, one more thing</button>
+    <div style="margin-top:.8rem;">
+      <button class="ghost" id="s4-restart">Play it again</button>
+    </div>
+  </section>
+
+  <!-- SCENE 5: birthday wish -->
+  <section class="scene" data-scene="5">
+    <div class="cake">🎂</div>
+    <h2 id="s5-title">Also — Happy Birthday My Queen.</h2>
+    <div id="confetti-field"></div>
+    <p id="s5-body">
+      Intially I started to created this only as birthday wishing site, unfinished ah irundhuchu night mudikalam parthan.
+      but now it became apology site. instead of birthday wishing.
+      okie -> actual message is my baby you have know no idea how much I feel lucky / happy / proud about the fact the got 10/10 girl.
+      looks 1000/10 more prettier than any disney princess, kindness 1000/10 than any person, overall human 100000/10.
+      when I see you I'm happy, when I think about you I'm still happy but I really miss you ( other dept idhu ).
+      its just that baby, I feel completely different with you, its just I'm not good enough with words that much,
+      but with eyes, fahad fazil maari eyes la answer solliduvan.
+      bore adikama simple moral of the story is Happy Birthday My love, My everything, My Queen, My baby.
+    </p>
+    <p class="signoff" id="s5-signoff">— Jaff</p>
+    <div style="margin-top:1rem;">
+      <button class="ghost" id="s5-restart">Play it again</button>
+    </div>
+  </section>
+
+  <div class="dots" id="dots">
+    <span data-d="1"></span><span data-d="2"></span><span data-d="3"></span><span data-d="4"></span><span data-d="5"></span>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG — put the real names and words here later.
+   ============================================================ */
+const CONFIG = {
+  recipientName: "",              // e.g. "Priya" — leave blank to keep it generic
+  excuses: [                      // bubbles to pop in the mini-game
+    "traffic", "I forgot", "it wasn't that deep",
+    "I didn't do it with intention", "I was busy", "I'm sorry before realising"
+  ],
+  letterBody: null,               // set a string later to replace the placeholder paragraph
+  signoff: null,                  // e.g. "— Rahul"
+  birthdayMessage: null,          // set a string later to replace the placeholder birthday note
+  birthdaySignoff: null           // e.g. "— Rahul" (defaults to `signoff` if left blank)
+};
+
+// Apply any config that's already filled in
+if (CONFIG.recipientName) {
+  document.getElementById('s1-title').textContent =
+    `Before I say sorry to ${CONFIG.recipientName}, I need you to do something for me.`;
+  document.getElementById('s5-title').textContent =
+    `Also — happy birthday, ${CONFIG.recipientName}.`;
+}
+if (CONFIG.letterBody) document.getElementById('letter-body').textContent = CONFIG.letterBody;
+if (CONFIG.signoff) document.getElementById('letter-signoff').textContent = CONFIG.signoff;
+if (CONFIG.birthdayMessage) document.getElementById('s5-body').textContent = CONFIG.birthdayMessage;
+document.getElementById('s5-signoff').textContent = CONFIG.birthdaySignoff || CONFIG.signoff || '— Jaff';
+
+/* ---------- scene navigation ---------- */
+const scenes = document.querySelectorAll('.scene');
+const dots = document.querySelectorAll('#dots span');
+function goTo(n){
+  scenes.forEach(s => s.classList.toggle('active', s.dataset.scene == n));
+  dots.forEach(d => d.classList.toggle('active', d.dataset.d == n));
+  if (n == 2) startGame();
+  if (n == 5) launchConfetti();
+}
+document.getElementById('s1-start').addEventListener('click', () => goTo(2));
+document.getElementById('s3-next').addEventListener('click', () => goTo(4));
+document.getElementById('s4-next').addEventListener('click', () => goTo(5));
+function resetToStart(){
+  document.getElementById('envelope').classList.remove('open');
+  document.getElementById('letter-text').classList.remove('shown');
+  document.getElementById('s3-next').style.display = 'none';
+  goTo(1);
+}
+document.getElementById('s4-restart').addEventListener('click', resetToStart);
+document.getElementById('s5-restart').addEventListener('click', resetToStart);
+
+/* ---------- Scene 5: confetti ---------- */
+function launchConfetti(){
+  const field = document.getElementById('confetti-field');
+  field.innerHTML = '';
+  const colors = ['#FF6F61', '#FFC857', '#C9ADD1', '#FFF8F0'];
+  const w = field.clientWidth;
+  for (let i = 0; i < 40; i++){
+    const c = document.createElement('div');
+    c.className = 'confetti';
+    c.style.left = (Math.random() * w) + 'px';
+    c.style.background = colors[i % colors.length];
+    c.style.animationDuration = (1.6 + Math.random() * 1.4) + 's';
+    c.style.animationDelay = (Math.random() * 0.6) + 's';
+    field.appendChild(c);
+  }
+}
+
+/* ---------- Scene 2: pop-the-excuses game ---------- */
+let popped = 0, total = 0;
+function startGame(){
+  const field = document.getElementById('game-field');
+  field.innerHTML = '';
+  popped = 0;
+  document.getElementById('score').textContent = '0 popped';
+  const words = CONFIG.excuses.length ? CONFIG.excuses : ["sorry", "oops", "my bad"];
+  total = words.length;
+  const w = field.clientWidth, h = field.clientHeight;
+  words.forEach((word, i) => {
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    b.textContent = word;
+    const x = Math.random() * (w - 120);
+    const y = Math.random() * (h - 60);
+    b.style.left = x + 'px';
+    b.style.top = y + 'px';
+    b.style.animationDuration = (3 + Math.random() * 2) + 's';
+    b.style.animationDirection = i % 2 ? 'alternate' : 'alternate-reverse';
+    b.addEventListener('click', () => {
+      if (b.classList.contains('popped')) return;
+      b.classList.add('popped');
+      popped++;
+      document.getElementById('score').textContent = `${popped} popped`;
+      if (popped === total) setTimeout(() => goTo(3), 500);
+    });
+    field.appendChild(b);
+  });
+}
+
+/* ---------- Scene 3: envelope open ---------- */
+document.getElementById('envelope').addEventListener('click', function(){
+  this.classList.add('open');
+  document.getElementById('letter-text').classList.add('shown');
+  document.getElementById('s3-hint').style.display = 'none';
+  document.getElementById('s3-next').style.display = 'inline-block';
+});
+</script>
+
+</body>
+</html>
